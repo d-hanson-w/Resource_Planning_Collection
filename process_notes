@@ -1,0 +1,22 @@
+
+- Path to virtual environment 
+```
+C:\Users\dha042\Documents\W_Development\Resource_Planning
+```
+
+- line to start virtual environment
+```
+resource_venv\Scripts\activate.bat
+```
+
+# One command to move to the directory and start the virtual environment
+
+cd C:\Users\dha042\Documents\W_Development\Resource_Planning && resource_venv\Scripts\activate.bat && jupyter lab
+
+
+## command for dash app 
+cd C:\Users\dha042\Documents\W_Development\Resource_Planning && resource_venv\Scripts\activate.bat && python dash_resourcing_app.py
+
+
+## Raw Data App 
+cd C:\Users\dha042\Documents\W_Development\Resource_Planning && resource_venv\Scripts\activate.bat && cd C:\Users\dha042\Documents\GitHub\resource_forecasting && python raw_data_app.py

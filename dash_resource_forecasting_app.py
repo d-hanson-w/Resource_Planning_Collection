@@ -165,16 +165,16 @@ app.layout = dbc.Container(html.Div(children=[
         width=4, style={'marginTop': 0})
     ),
 
-    # dbc.Row(
-    #     dbc.Col(
-    #         html.Div(dcc.Dropdown(
-    #             options=role_options, 
-    #             value='System Engineer',
-    #             placeholder='select a role',
-    #             id='role-select')
-    #         ), 
-    #     width=4, style={'marginTop': 10})
-    # ),
+    dbc.Row(
+        dbc.Col(
+            html.Div(dcc.Dropdown(
+                options=role_options, 
+                value='System Engineer',
+                placeholder='select a role',
+                id='role-select')
+            ), 
+        width=4, style={'marginTop': 10})
+    ),
 
     # html.Div([
     #     dcc.DatePickerRange(
@@ -192,11 +192,11 @@ app.layout = dbc.Container(html.Div(children=[
     #-- Output Display 
     html.Div([
         dash_table.DataTable(
-            #df_tasks.to_dict('records'),
+            df_tasks.to_dict('records'),
             [{"name": i.replace('_', ' '), "id": i} for i in cx_all_persons.columns],
             filter_action='custom',
             sort_action='native',
-            style_table={'height': '300px', 'overflowY': 'auto'},
+            style_table={'height': '500px', 'overflowY': 'auto'},
             id='cx-personnel-table'
         )], 
         style={'marginTop': 25},
