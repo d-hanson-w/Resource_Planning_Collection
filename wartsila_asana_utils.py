@@ -184,3 +184,66 @@ def make_persondb_df(pdb_list):
 
 def get_role_reference_df(df_master, role):
     return df_master[df_master['role'] == role]
+
+
+#-------------------------
+# Global Portfolio Utilities
+
+def extract_custom_field_vals(cf_list):
+    vals_dict = dict()
+    for c in cf_list: 
+        c_type = c['type']
+        if c_type == 'enum':
+            c_val = c['enum_value']
+            vals_dict[c['name']] = c_val['name'] if c_val is not None else 'none'
+
+        elif c_type == 'text':
+            c_val = c['text_value']
+            vals_dict[c['name']] = c_val if c_val is not None else 'none'
+
+        elif c_type == 'number':
+            c_val = c['number_value']
+            vals_dict[c['name']] = c_val if c_val is not None else 'none'
+    return vals_dict
+
+
+def get_global_portfolio_data():
+    dh_wart_key = wac.get_asana_pat()
+    wartsila_workspace = '8836488480224'
+    global_portfolio_gid = '1201827339230998'
+
+    #establish asana client
+    client = asana.Client.access_token(dh_wart_key)
+
+    #task_fields = ['name','gid','assignee.name','start_on','due_on', 'custom_fields', 'projects.name']
+    #wrong - global_tasks = client.tasks.get_tasks_for_project(global_project_gid) #, opt_fields=task_fields) # 'custom_fields'])
+    
+    portfolio_fields = ['custom_fields']
+    global_portfolio_cfs = client.portfolios.get_items_for_portfolio(global_portfolio_gid, opt_fields=portfolio_fields)
+    
+    global_portfolio_names = client.portfolios.get_items_for_portfolio(global_portfolio_gid)
+    
+    # unpack Portfolio Project Names API call
+    global_portfolio_names_list = list()
+    for p in global_portfolio_names:
+        global_portfolio_names_list.append(p)
+    df_global_pjs = pd.DataFrame(global_portfolio_names_list)
+    
+    # unpack Project Custom Fields API Call
+    gpcl = list()
+    for pc in global_portfolio_cfs:
+        gpcl.append(pc)
+    
+    # extract custom field values
+    pj_ext_cf_list = list()
+    for g in gpcl:
+        t_cfs = g['custom_fields']
+        pj_dict = extract_custom_field_vals(t_cfs)
+        pj_dict['gid'] = g['gid']
+        pj_ext_cf_list.append(pj_dict)
+    df_global_cfs = pd.DataFrame(pj_ext_cf_list)
+    
+    # merge Project Names df with Custom Fields df
+    df_global = pd.merge(df_global_pjs, df_global_cfs, how='left', on='gid')
+    
+    return df_global

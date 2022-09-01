@@ -1,0 +1,133 @@
+def make_allreg_usage_analysis_table(df_in, show_graphs=False, save_graphs=False, use_pj_groups=True):
+    
+    if use_pj_groups:
+        df_tasks = make_project_groups(df_in.copy())
+        print('using groups')
+    else:
+        df_tasks = df_in.copy()
+    ## Unassigned - Cx
+    # get all cx 'unassigned' tasks (denoted by 'Antti Pitkanen' as assignee)
+    df_t = df_tasks
+    df_t = df_t[df_t['assignee_name']=='Antti Pitkänen']
+
+    ## Reference Cx Personnel
+    pdb_list = wa.get_persondb_api_data()
+    df_personnel_master = wa.make_persondb_df(pdb_list)
+    df_p_all = df_personnel_master.copy()
+
+    cx_all_persons = df_p_all[df_p_all['role'].isin(['Commissioning Manager', 'Commissioning Engineer'])].sort_values('region')
+    cx_all_persons_count = cx_all_persons['person_name'].nunique()
+    list_all_cx_persons = cx_all_persons['person_name'].tolist()
+
+    ## Assigned - Cx
+    # Get tasks assigned to Cx Managers or Cx Engineers
+    roles_list = ['Commissioning Manager', 'Commissioning Engineer']
+    df_ass = df_tasks.copy()
+    df_ass = df_ass[df_ass['role'].isin(roles_list)]
+
+    # exclude unassigned tasks
+    df_ass = df_tasks.copy()
+    exclude_assignee_list = ['Antti Pitkänen', 'unassigned']
+    df_ass = df_ass[~df_ass['assignee_name'].isin(exclude_assignee_list)]
+
+    # verify assignees against master list
+    # todo determine if we need to add region filter
+    df_ass = df_ass[df_ass['assignee_name'].isin(cx_all_persons['person_name'].to_list())]
+
+    ## Assigned and Unassigned 
+    df_cx_all = pd.concat([df_t, df_ass])    
+    
+    region_options = [['AMER', 'EUAF', 'MEA']]
+    
+    list_reg_collector = list()
+    list_task_reg_collector = list()
+    for reg in region_options:
+        
+        # convert to list (provisional to make use of existing code)
+        #selected_regions = [reg]
+        selected_regions = reg
+        cx_all_persons_count_fil = cx_all_persons[cx_all_persons['region'].isin(selected_regions)]['person_name'].nunique()
+            
+        df_cx_all_fil = df_cx_all[df_cx_all['region'].isin(selected_regions)]
+        df_t_fil = df_t[df_t['region'].isin(selected_regions)]
+        df_ass_fil = df_ass[df_ass['region'].isin(selected_regions)]
+        
+        #-------Troubleshooting------------
+#         print("--Selected Region--")
+#         print(selected_regions)
+#         print("--People Count--")
+#         display(cx_all_persons_count)
+        
+#         print("--Personnel List--")
+#         display(df_cx_all_fil)
+        
+#         print("--Not Assigned--")
+#         display(df_t_fil)
+        
+#         print("--Assigned--")
+#         display(df_ass_fil)
+        #-----------------------------------
+
+        # get analysis values
+        df_cx_combo_fil = make_personnel_analysis_df(df_cx_all_fil, df_t_fil, df_ass_fil, cx_all_persons_count_fil)
+        # Add region column
+        #df_cx_combo_fil['region'] = reg
+        df_cx_combo_fil['region'] = 'all_regions'
+        list_reg_collector.append(df_cx_combo_fil)
+        
+        temp_df_tim = df_cx_all_fil.replace('Antti Pitkänen','not_assiged')
+        #temp_df_tim['region'] = reg
+        temp_df_tim['region'] = 'all_regions'
+        list_task_reg_collector.append(temp_df_tim)
+        
+        # Dash output prep
+        df_persons_reference = cx_all_persons[cx_all_persons['region'].isin(selected_regions)]
+        #display(df_persons_reference)
+        
+        
+        if show_graphs or save_graphs:
+            # output prep
+            df_persons_reference = cx_all_persons[cx_all_persons['region'].isin(selected_regions)]
+            table_persons_ref = df_persons_reference.to_dict('records')
+            
+            fig_daily_usage = px.area(df_cx_combo_fil, x='date', y='num_persons_supply', 
+               title=f'Combined Commissioning Manager and Engineer Supply over Time \n {selected_regions} <br>(people available) - (people needed)',
+                labels={'num_persons_supply': 'Available Supply (number of people)'})
+            fig_daily_usage.update_traces(line_color='#00AA00')
+
+            temp_df_tim = df_cx_all_fil.replace('Antti Pitkänen','not_assiged')
+            fig_cx_reg_gantt = px.timeline(temp_df_tim.sort_values('start_date'), x_start="start_date", x_end="due_date", y="eso_project_name", color='assignee_name')
+            fig_cx_reg_gantt.update_yaxes(autorange="reversed") # otherwise tasks are listed from the bottom up
+            fig_cx_reg_gantt.update_xaxes(
+                dtick="M1",
+                tickformat="%b\n%Y")
+            #fig_cx_reg_gantt.update_yaxes(ticklabelposition="inside")
+            fig_cx_reg_gantt.update_xaxes(range=['2022-01-01', '2024-01-01'])
+
+            fig_total_pjs_reg = px.line(df_cx_combo_fil, x='date', y='num_total_projects', title=f'Total Projects - Region: {selected_regions}',
+                labels={'num_total_projects': 'Num Total Projects', 'date': 'Date'})
+            fig_total_pjs_reg.update_xaxes(
+                dtick="M1",
+                tickformat="%b\n%Y")
+            
+            fig_overlay = px.line(df_cx_combo_fil, x='date', y='num_total_projects', title=f'Total Projects - Region: {selected_regions}',
+                labels={'num_total_projects': 'Num Total Projects', 'date': 'Date'},
+                width=1000, height=500)
+            x_bar = df_cx_combo_fil['date'].tolist()
+            y_bar = df_cx_combo_fil['num_persons_supply'].tolist()
+            fig_overlay.add_bar(x=x_bar, y=y_bar, name="Personnel Supply")
+            fig_overlay.update_yaxes(dtick=1)
+            
+            
+            if save_graphs:
+                fig_daily_usage.write_image(f"daily_usage_{reg}.jpeg", width=1200, height=500, scale=1)
+                fig_cx_reg_gantt.write_image(f"assignee_gant_{reg}.jpeg", width=1500, height=500, scale=1)
+                fig_total_pjs_reg.write_image(f"total_projects_{reg}.jpeg", width=900, height=500, scale=1)
+                
+            if show_graphs:
+                fig_overlay.show()
+                fig_daily_usage.show()
+                fig_cx_reg_gantt.show()
+                fig_total_pjs_reg.show()
+        
+    return pd.concat(list_reg_collector), pd.concat(list_task_reg_collector)
