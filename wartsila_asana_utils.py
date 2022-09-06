@@ -103,6 +103,12 @@ def format_dates_as_strings(df):
     df['due_date'] = df['due_date'].dt.strftime("%Y-%m-%d")
     return df
 
+def get_resource_project_data():
+    rsc_task_list = get_api_rsc_tasks()
+    df_tasks = make_rsc_tasks_df(rsc_task_list)
+    df_tasks = prep_task_display_table(df_tasks)
+    return df_tasks
+
 #---------------------------------------------
 # Analysis Functions
 
@@ -185,6 +191,10 @@ def make_persondb_df(pdb_list):
 def get_role_reference_df(df_master, role):
     return df_master[df_master['role'] == role]
 
+def get_delivery_personnel_data():
+    pdb_list = get_persondb_api_data()
+    df_personnel = make_persondb_df(pdb_list)
+    return df_personnel 
 
 #-------------------------
 # Global Portfolio Utilities
