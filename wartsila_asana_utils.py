@@ -135,6 +135,9 @@ def filter_tasks_by_region(df, region_list):
     region_list = [item for sublist in region_list for item in sublist]
     return df[df['region'].isin(region_list)]
 
+# todo
+#def get_assigned_tasks(df):
+    
 def remove_unassigned_tasks(df):
     return df[df['assignee_name'] != 'unassigned']
 
@@ -188,6 +191,11 @@ def make_persondb_df(pdb_list):
     df_pdb = df_pdb[df_pdb['person_name'] != 'unassigned']
     return df_pdb
 
+def get_personnel_project_data():
+    pdb_list = get_persondb_api_data()
+    df_personnel = make_persondb_df(pdb_list)
+    return df_personnel
+    
 def get_role_reference_df(df_master, role):
     return df_master[df_master['role'] == role]
 
