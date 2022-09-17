@@ -1,0 +1,10 @@
+Notes About Resource Forecasting and Analysis
+
+
+Workload Units
+general values 
+
+
+How Unassigned Tasks are Designated
+
+

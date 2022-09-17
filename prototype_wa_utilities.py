@@ -18,17 +18,53 @@ import pandas as pd
 
 def make_workload_units(df):
     """
-    dex
+    Purpose : Assigne workload dummy data - later to be replaced by real data
     """
     df['workload_units'] = 1
     return df
 
+def make_num_projects_column(df):
+    """
+    Purpose : Add column that can later be used in aggregate numerical calculations
+    """
+    df['num_projects'] = 1
+    return df
+
+def make_assigned_status_column(df):
+    """
+    Purpose : Add column to use for eaisly filtering Assigned and Unassigned Tasks
+    """
+    #---------
+    general_unassigned = (df['assignee_name'] == 'unassigned')
+    amer_unassigned = (df['assignee_name'] == 'Antti Pitkänen')
+    
+    options = [general_unassigned, amer_unassigned]
+    outputs = ['unassigned', 'unassigned']
+    df['assigned_status'] = np.select(options, outputs, 'assigned')
+    return df
+
 def make_project_type_workload_columns(df):
-    project_type_col = 'Project Type [ESO]'
+    project_type_col = 'project_type'
     workload_column = 'workload_units'
     
-    df['eeq_workload'] = np.where(df[project_type_col]=='EEQ', df[workload_column]*0.2, 0)
-    df['epc_workload'] = np.where(df[project_type_col]=='EPC', df[workload_column]*0.3, 0)
+    # Workload Multipliers
+    multiplier_eeq = 0.2
+    multiplier_epc = 0.3
+    
+    # adding project type data columns
+    df['num_eeq_projects'] = np.where(df[project_type_col]=='EEQ', 1, 0)
+    df['num_epc_projects'] = np.where(df[project_type_col]=='EPC', 1, 0)
+    df['num_no_type_projects'] = np.where(df[project_type_col]=='no_type', 1, 0)
+    df['eeq_workload'] = np.where(df[project_type_col]=='EEQ', df[workload_column]*multiplier_eeq, 0)
+    df['epc_workload'] = np.where(df[project_type_col]=='EPC', df[workload_column]*multiplier_epc, 0)
+    
+    return df
+
+def make_comparison_columns_for_expanded(df):
+    """
+    
+    """
+    
     
     return df
 
@@ -53,8 +89,15 @@ def make_project_groups(df):
 #  Analysis Functions
 #-------------------------------------
 def make_single_person_summary(df):
+    df = df.copy()
     df['total_workload'] = df['eeq_workload'] + df['epc_workload']
-    df.groupby('assignee_name').sum()
+    df['available_workload'] = 1 - df['total_workload']
+    df = df.groupby('assignee_name').sum()
+    return df
+
+def make_unassigned_day_summary(df):
+    df = df.copy()
+    df = df.groupby('date').sum()
     return df
 
 #-------------------------------------
@@ -94,12 +137,17 @@ def make_list_of_workload_pre_analysis_filters(df):
     role_options = df['role'].unique().tolist()
     region_options = df['region'].unique().tolist()
     pipeline_options = df['[ESO] Stage'].unique().tolist()
+    assigned_options = df['assigned_status'].unique().tolist()
     
     # make all filters
     filters_list_for_analysis = list()
-    for region in region_options: 
-        for role in role_options:
-            for stage in pipeline_options:
-                filters_list_for_analysis.append({'region': region, 'role': role, '[ESO] Stage': stage})
+    for assigned_status in assigned_options:
+        for region in region_options: 
+            for role in role_options:
+                for stage in pipeline_options:
+                    filters_list_for_analysis.append({'region': region, 
+                                                      'role': role, 
+                                                      '[ESO] Stage': stage, 
+                                                      'assigned_status': assigned_status})
     
     return filters_list_for_analysis
