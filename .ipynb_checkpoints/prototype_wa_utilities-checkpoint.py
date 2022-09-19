@@ -52,10 +52,10 @@ def make_project_type_workload_columns(df):
     multiplier_epc = 0.3
     
     # adding project type data columns
-    df['num_eeq_projects'] = np.where(df[project_type_col]=='EEQ', 1, 0)
+    df['num_eeq_projects'] = np.where(df[project_type_col].str.contains('EEQ'), 1, 0)
     df['num_epc_projects'] = np.where(df[project_type_col]=='EPC', 1, 0)
     df['num_no_type_projects'] = np.where(df[project_type_col]=='no_type', 1, 0)
-    df['eeq_workload'] = np.where(df[project_type_col]=='EEQ', df[workload_column]*multiplier_eeq, 0)
+    df['eeq_workload'] = np.where(df[project_type_col].str.contains('EEQ'), df[workload_column]*multiplier_eeq, 0)
     df['epc_workload'] = np.where(df[project_type_col]=='EPC', df[workload_column]*multiplier_epc, 0)
     
     return df
