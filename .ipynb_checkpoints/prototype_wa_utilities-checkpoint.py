@@ -91,7 +91,6 @@ def make_project_groups(df):
 def make_single_person_summary(df):
     df = df.copy()
     df['total_workload'] = df['eeq_workload'] + df['epc_workload']
-    df['available_workload'] = 1 - df['total_workload']
     df = df.groupby('assignee_name').sum()
     return df
 

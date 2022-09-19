@@ -1,4 +1,6 @@
 import wartsila_asana_utils as wa
+import pandas as pd
+import numpy as np
 # breaking down analysis function 
 
 #1. get unassigned tasks 
@@ -44,13 +46,13 @@ def calculate_aggregate_workload_analysis(df_assigned, df_unassigned, total_pers
     ## Calculate Workload Columns for each Day
     analysis_list = list()
     for _, r in df_dater2.iterrows():
-        df_ass_day = wa.filter_tasks_by_time_window(df_ass, r['date'], r['date'])
-        df_unass_day = wa.filter_tasks_by_time_window(df_unass, r['date'], r['date'])
+        df_ass_day = wa.filter_tasks_by_time_window(df_assigned, r['date'], r['date'])
+        df_unass_day = wa.filter_tasks_by_time_window(df_unassigned, r['date'], r['date'])
         
         # Calculations
         # workload-based
         ass_workload_val = df_unass_day[workload_column].sum(axis=0)
-        unass_workload_val = df_ass[workload_column].sum(axis=0)        
+        unass_workload_val = df_ass_day[workload_column].sum(axis=0)        
         
         # calculate cumulative workload values and append to collector list
         analysis_list.append(
