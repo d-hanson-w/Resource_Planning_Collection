@@ -44,7 +44,7 @@ def make_assigned_status_column(df):
     return df
 
 def make_project_type_workload_columns(df):
-    project_type_col = 'project_type'
+    project_type_col = 'Project Type [ESO]'
     workload_column = 'workload_units'
     
     # Workload Multipliers
