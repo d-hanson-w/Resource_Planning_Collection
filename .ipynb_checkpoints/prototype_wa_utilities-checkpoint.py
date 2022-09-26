@@ -43,6 +43,38 @@ def make_assigned_status_column(df):
     df['assigned_status'] = np.select(options, outputs, 'assigned')
     return df
 
+def make_project_type_multiplier_columns(df):
+    
+    epc_multiplier_dict = {
+    'Commissioning Manager': 1.0,
+    'Commissioning Engineer' : 1.0, 
+    'System Engineer' : 0.5, 
+    'Solution Engineer' : 0.4, 
+    'CPE Civil' : 0.2, 
+    'CPE Electrical' : 0.5, 
+    }
+     
+    eeq_multiplier_dict = {
+    'Commissioning Manager': 1.0,
+    'Commissioning Engineer' : 1.0, 
+    'System Engineer' : 0.25, 
+    'Solution Engineer' : 0.2, 
+    'CPE Civil' : 0.1, 
+    'CPE Electrical' : 0.1, 
+    }    
+    
+    eeq_options = [(df['role']==role) for role in eeq_multiplier_dict.keys()]
+    eeq_outputs = eeq_multiplier_dict.values()
+    
+    epc_options = [(df['role']==role) for role in epc_multiplier_dict.keys()]
+    epc_outputs = epc_multiplier_dict.values()
+    
+    df['eeq_workload_multiplier'] = np.select(eeq_options, eeq_outputs, 1)
+    df['epc_workload_multiplier'] = np.select(epc_options, epc_outputs, 1)
+    return df
+        
+
+
 def make_project_type_workload_columns(df):
     project_type_col = 'Project Type [ESO]'
     workload_column = 'workload_units'
@@ -56,9 +88,13 @@ def make_project_type_workload_columns(df):
     df['num_epc_projects'] = np.where(df[project_type_col].str.contains('EPC'), 1, 0)
     df['num_no_type_projects'] = np.where(df[project_type_col]=='no_type', 1, 0)
     
-    df['eeq_workload'] = np.where(df[project_type_col].str.contains('EEQ'), df[workload_column]*multiplier_eeq, 0)
-    df['epc_workload'] = np.where(df[project_type_col].str.contains('EPC'), df[workload_column]*multiplier_epc, 0)
+    # df['eeq_workload'] = np.where(df[project_type_col].str.contains('EEQ'), df[workload_column]*multiplier_eeq, 0)
+    # df['epc_workload'] = np.where(df[project_type_col].str.contains('EPC'), df[workload_column]*multiplier_epc, 0)
     
+    df = make_project_type_multiplier_columns(df)
+    df['eeq_workload'] = np.where(df[project_type_col].str.contains('EEQ'), df[workload_column]*df['eeq_workload_multiplier'], 0)
+    df['epc_workload'] = np.where(df[project_type_col].str.contains('EPC'), df[workload_column]*df['epc_workload_multiplier'], 0)
+                                  
     return df
 
 def make_comparison_columns_for_expanded(df):
