@@ -76,18 +76,30 @@ def get_eso_project_name(task):
     else:
         return 'project_name_error'
 
+def get_resource_allocation_percent(task):
+    for cf in task['custom_fields']:
+        if cf['name'] == 'Resource allocation percent [ESO]': 
+            if cf['number_value'] == None: 
+                return 0
+            else: 
+                return(cf['number_value'])
+
 def convert_api_task_to_row(task):
+    """
+    combines processing steps for individual asana fields into one function
+    """
     assignee_name = get_assignee_name(task)
     region = get_task_region(task)
     eso_project_name = get_eso_project_name(task)
     role = get_role_eso_value(task)
     project_type = get_project_type(task)
-    row = [assignee_name, region, eso_project_name, role, task['start_on'], task['due_on'], task['gid'], task['name'], project_type]
+    resource_allocation = get_resource_allocation_percent(task)
+    row = [assignee_name, region, eso_project_name, role, resource_allocation, task['start_on'], task['due_on'], task['gid'], task['name'], project_type]
     return row
 
 def make_rsc_tasks_df(task_list):
     resource_rows = [convert_api_task_to_row(t) for t in task_list]
-    resource_tasks_clean = pd.DataFrame(resource_rows, columns=['assignee_name', 'region', 'eso_project_name', 'role', 'start_date', 'due_date', 'gid', 'task_name', 'project_type']) 
+    resource_tasks_clean = pd.DataFrame(resource_rows, columns=['assignee_name', 'region', 'eso_project_name', 'role', 'resource_allocation_percent', 'start_date', 'due_date', 'gid', 'task_name', 'project_type']) 
 
     resource_tasks_clean['start_date'] =  pd.to_datetime(resource_tasks_clean['start_date'], format='%Y-%m-%d')
     resource_tasks_clean['due_date'] =  pd.to_datetime(resource_tasks_clean['due_date'], format='%Y-%m-%d')
@@ -95,7 +107,7 @@ def make_rsc_tasks_df(task_list):
     return resource_tasks_clean
 
 def prep_task_display_table(df):
-    df = df[['assignee_name', 'role', 'region', 'eso_project_name', 'start_date', 'due_date', 'project_type']]
+    df = df[['assignee_name', 'role', 'region', 'eso_project_name', 'start_date', 'due_date', 'project_type', 'resource_allocation_percent']]
     return df
 
 def format_dates_as_strings(df):
@@ -104,6 +116,9 @@ def format_dates_as_strings(df):
     return df
 
 def get_resource_project_data():
+    """
+    simplifies data acqiusiiton for this project to one function
+    """
     rsc_task_list = get_api_rsc_tasks()
     df_tasks = make_rsc_tasks_df(rsc_task_list)
     df_tasks = prep_task_display_table(df_tasks)
